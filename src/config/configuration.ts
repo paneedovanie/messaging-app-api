@@ -1,4 +1,5 @@
 type Config = {
+  port: number;
   password: {
     saltOrRounds: number;
   };
@@ -13,6 +14,7 @@ type Config = {
 };
 
 export default (): Config => ({
+  port: +process.env.PORT || 3000,
   password: {
     saltOrRounds: +process.env.PASSWORD_SALT_OR_ROUNDS || 10,
   },
