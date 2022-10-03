@@ -13,19 +13,18 @@ import { CreateMessageDto } from 'src/modules/message/dtos/create-message.dto';
 import { Server } from 'https';
 import { Logger } from '@nestjs/common';
 import { UserService } from '../../user/services/user.service';
-import { ChannelRepository } from '../../channel/repositories/channel.repository';
 
 @WebSocketGateway({ cors: true })
 export class EventGateway {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(EventGateway.name);
   private clients = new Map();
+  private userId;
 
   constructor(
     private readonly messageService: MessageService,
     private readonly channelService: ChannelService,
     private readonly userService: UserService,
-    private readonly channelRespository: ChannelRepository,
   ) {}
 
   afterInit() {
@@ -35,23 +34,26 @@ export class EventGateway {
   handleDisconnect(client) {
     const { userId } = client.handshake.query;
     this.clients.delete(userId);
-    // console.log(`Client disconnected: ${client.id}`);
+    this.userService.setOnline(userId, false);
+    // console.log(`Client disconnected: ${userId}`);
   }
 
   handleConnection(client) {
     const { userId } = client.handshake.query;
+    this.userId = userId;
     this.clients.set(userId, client);
-    // console.log(`Client connected: ${client.id}`);
+    this.userService.setOnline(userId, true);
+    // console.log(`Client connected: ${userId}`);
     // console.log(this.clients.size);
   }
 
   @SubscribeMessage(SocketEvent.GetLatestMessages)
-  async getChannelList(@MessageBody() id: ObjectId): Promise<Message[]> {
+  async findLastestMessages(@MessageBody() id: ObjectId): Promise<Message[]> {
     return this.messageService.findLastestMessages(id);
   }
 
   @SubscribeMessage(SocketEvent.GetChannelMessages)
-  getChannelMessages(@MessageBody() id: ObjectId): Promise<Message[]> {
+  getChannelMessages(@MessageBody() id: ObjectId): Promise<Channel> {
     return this.channelService.findMessages(id);
   }
 

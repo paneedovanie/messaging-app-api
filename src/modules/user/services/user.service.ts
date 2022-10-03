@@ -1,17 +1,18 @@
-import { EntityManager } from '@mikro-orm/mongodb';
+import { EntityManager, ObjectId } from '@mikro-orm/mongodb';
 import {
   ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from 'src/entities/user.entity';
 import { RegisterUserDto } from '../dtos/register-user.dto';
-import { UserRepository } from '../repositories/user.repository';
+import { UserRepository, OnlineRepository } from '../repositories';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { LoginUserDto } from '../dtos/login-user.dto';
 import { UserAccessToken } from 'src/types/user.type';
+import { generateColorFromText } from 'src/utils/main.util';
+import { Online, User } from '../../../entities';
 
 @Injectable()
 export class UserService {
@@ -20,6 +21,7 @@ export class UserService {
     private readonly em: EntityManager,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly onlineRepository: OnlineRepository,
   ) {}
 
   getAll(): Promise<User[]> {
@@ -46,6 +48,7 @@ export class UserService {
     if (isExisting) throw new ConflictException('username already in used');
     data.password = await this.hashPassword(data.password);
     const user = this.userRepository.create(data);
+    user.color = generateColorFromText(user.name);
     await this.em.persistAndFlush(user);
     return this.generateToken(user);
   }
@@ -67,5 +70,17 @@ export class UserService {
 
   findByUsername(username: string): Promise<User> {
     return this.userRepository.findOne({ username });
+  }
+
+  async setOnline(userId: ObjectId, value: boolean): Promise<User> {
+    const user = await this.userRepository.findOne(userId, {
+      populate: ['online'],
+    });
+    user.online = this.onlineRepository.create({
+      _id: user.online?._id,
+      active: value,
+    });
+    await this.em.persistAndFlush(user);
+    return user;
   }
 }

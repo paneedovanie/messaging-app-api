@@ -31,12 +31,16 @@ export class ChannelService {
     });
   }
 
-  async findMessages(id: ObjectId): Promise<Message[]> {
-    return this.messageRepository.find(
-      { channel: id },
-      {
-        populate: ['user'],
-      },
-    );
+  async findMessages(id: ObjectId): Promise<Channel> {
+    const channel = await this.channelRepository.findOne(id, {
+      populate: [
+        'users',
+        'users.online',
+        'messages',
+        'messages.user',
+        'messages.user.online',
+      ],
+    });
+    return channel;
   }
 }

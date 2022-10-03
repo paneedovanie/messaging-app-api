@@ -35,6 +35,14 @@ export class MessageRepository extends EntityRepository<Message> {
       },
       {
         $lookup: {
+          from: 'online',
+          localField: 'user.online',
+          foreignField: '_id',
+          as: 'online',
+        },
+      },
+      {
+        $lookup: {
           from: 'channel',
           localField: 'channel',
           foreignField: '_id',
@@ -74,45 +82,44 @@ export class MessageRepository extends EntityRepository<Message> {
         $replaceRoot: { newRoot: '$doc' },
       },
       {
+        $addFields: {
+          id: '$_id',
+          user: { $arrayElemAt: ['$user', 0] },
+          channel: {
+            $arrayElemAt: ['$channel', 0],
+          },
+        },
+      },
+      {
         $lookup: {
           from: 'user',
           localField: 'channel.users',
           foreignField: '_id',
           as: 'channel_users',
-          pipeline: idPipeline,
+          pipeline: [
+            ...idPipeline,
+            {
+              $lookup: {
+                from: 'online',
+                localField: 'online',
+                foreignField: '_id',
+                as: 'online',
+              },
+            },
+            {
+              $addFields: {
+                online: {
+                  $arrayElemAt: ['$online', 0],
+                },
+              },
+            },
+          ],
         },
       },
       {
-        $project: {
-          createdAt: 1,
-          content: 1,
-          user: { $arrayElemAt: ['$user', 0] },
-          channel_users: {
-            name: 1,
-            username: 1,
-            createdAt: 1,
-            updatedAt: 1,
-            id: 1,
-          },
-          channel: { $arrayElemAt: ['$channel', 0] },
-        },
-      },
-      {
-        $project: {
-          id: 1,
-          createdAt: 1,
-          content: 1,
-          user: {
-            id: 1,
-            name: 1,
-            username: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
+        $addFields: {
           channel: {
-            createdAt: 1,
-            updatedAt: 1,
-            id: 1,
+            id: '$channel._id',
             users: '$channel_users',
           },
         },
