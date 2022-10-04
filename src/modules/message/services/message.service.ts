@@ -16,11 +16,7 @@ export class MessageService {
     return this.messageRepository.generate(data);
   }
 
-  async findLastestMessages(id: ObjectId): Promise<Message[]> {
-    const result = await this.messageRepository.findLastestMessages(id);
-    console.log(result);
-    console.log((result[0] as any).channel_users);
-    console.log(result[0].channel.users);
-    return result;
+  findLastestMessages(id: ObjectId): Promise<Message[]> {
+    return this.messageRepository.findLastestMessages(id);
   }
 }

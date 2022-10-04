@@ -31,8 +31,8 @@ export class ChannelService {
     });
   }
 
-  async findMessages(id: ObjectId): Promise<Channel> {
-    const channel = await this.channelRepository.findOne(id, {
+  findMessages(id: ObjectId): Promise<Channel> {
+    return this.channelRepository.findOne(id, {
       populate: [
         'users',
         'users.online',
@@ -41,6 +41,5 @@ export class ChannelService {
         'messages.user.online',
       ],
     });
-    return channel;
   }
 }

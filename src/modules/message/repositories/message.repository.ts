@@ -35,14 +35,6 @@ export class MessageRepository extends EntityRepository<Message> {
       },
       {
         $lookup: {
-          from: 'online',
-          localField: 'user.online',
-          foreignField: '_id',
-          as: 'online',
-        },
-      },
-      {
-        $lookup: {
           from: 'channel',
           localField: 'channel',
           foreignField: '_id',
@@ -124,6 +116,7 @@ export class MessageRepository extends EntityRepository<Message> {
           },
         },
       },
+      { $sort: { createdAt: -1 } },
     ]);
   }
 }

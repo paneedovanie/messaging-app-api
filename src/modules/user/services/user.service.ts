@@ -28,7 +28,7 @@ export class UserService {
     return this.userRepository.find({});
   }
 
-  getById(id: string): Promise<User> {
+  async getById(id: string): Promise<User> {
     return this.userRepository.findOne({ id });
   }
 
@@ -76,10 +76,12 @@ export class UserService {
     const user = await this.userRepository.findOne(userId, {
       populate: ['online'],
     });
-    user.online = this.onlineRepository.create({
-      _id: user.online?._id,
-      active: value,
-    });
+    if (!user.online) {
+      user.online = this.onlineRepository.create({
+        user,
+        active: value,
+      });
+    } else user.online.active = value;
     await this.em.persistAndFlush(user);
     return user;
   }
