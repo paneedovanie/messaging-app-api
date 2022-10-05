@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   UnauthorizedException,
   UseGuards,
@@ -10,6 +11,7 @@ import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../../decorators/current-user.decorator';
 import { User } from '../../../entities/user.entity';
 import { UserAccessToken } from '../../../types/user.type';
+import { ChangePasswordDto, UpdateUserDto } from '../dtos';
 import { LoginUserDto } from '../dtos/login-user.dto';
 import { RegisterUserDto } from '../dtos/register-user.dto';
 import { UserService } from '../services/user.service';
@@ -18,6 +20,7 @@ import { UserService } from '../services/user.service';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   getAll(): Promise<User[]> {
     return this.userService.getAll();
@@ -38,5 +41,25 @@ export class UserController {
   @Post('register')
   register(@Body() data: RegisterUserDto): Promise<UserAccessToken> {
     return this.userService.register(data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/change-password')
+  changePassword(
+    @CurrentUser() currentUser: User,
+    @Body() data: ChangePasswordDto,
+  ): Promise<User> {
+    if (!currentUser) throw new UnauthorizedException();
+    return this.userService.changePassword(currentUser.id, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('/update')
+  update(
+    @CurrentUser() currentUser: User,
+    @Body() data: UpdateUserDto,
+  ): Promise<User> {
+    if (!currentUser) throw new UnauthorizedException();
+    return this.userService.update(currentUser.id, data);
   }
 }

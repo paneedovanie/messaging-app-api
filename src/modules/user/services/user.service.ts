@@ -13,6 +13,7 @@ import { LoginUserDto } from '../dtos/login-user.dto';
 import { UserAccessToken } from 'src/types/user.type';
 import { generateColorFromText } from 'src/utils/main.util';
 import { Online, User } from '../../../entities';
+import { ChangePasswordDto, UpdateUserDto } from '../dtos';
 
 @Injectable()
 export class UserService {
@@ -82,6 +83,28 @@ export class UserService {
         active: value,
       });
     } else user.online.active = value;
+    await this.em.persistAndFlush(user);
+    return user;
+  }
+
+  async update(userId: string, { name, color }: UpdateUserDto) {
+    const user = await this.userRepository.findOne(userId);
+    user.name = name;
+    user.color = color;
+    await this.em.persistAndFlush(user);
+    return user;
+  }
+
+  async changePassword(
+    userId: string,
+    { currentPassword, password }: ChangePasswordDto,
+  ) {
+    const unauthorizedMessage = 'Invalid username and password combination';
+    const user = await this.userRepository.findOne(userId);
+    if (!user) throw new UnauthorizedException(unauthorizedMessage);
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) throw new UnauthorizedException(unauthorizedMessage);
+    user.password = await this.hashPassword(password);
     await this.em.persistAndFlush(user);
     return user;
   }
