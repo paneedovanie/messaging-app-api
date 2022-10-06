@@ -7,18 +7,22 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { NotificationService } from 'src/modules/notification/services/notification.service';
 import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
 import { CurrentUser } from '../../../decorators/current-user.decorator';
 import { User } from '../../../entities/user.entity';
 import { UserAccessToken } from '../../../types/user.type';
-import { ChangePasswordDto, UpdateUserDto } from '../dtos';
+import { ChangePasswordDto, PushTokenDto, UpdateUserDto } from '../dtos';
 import { LoginUserDto } from '../dtos/login-user.dto';
 import { RegisterUserDto } from '../dtos/register-user.dto';
 import { UserService } from '../services/user.service';
 
 @Controller('users')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private notificationService: NotificationService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -61,5 +65,15 @@ export class UserController {
   ): Promise<User> {
     if (!currentUser) throw new UnauthorizedException();
     return this.userService.update(currentUser.id, data);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/push-token')
+  pushToken(
+    @CurrentUser() currentUser: User,
+    @Body() data: PushTokenDto,
+  ): void {
+    if (!currentUser) throw new UnauthorizedException();
+    return this.notificationService.set(currentUser.id, data.token);
   }
 }

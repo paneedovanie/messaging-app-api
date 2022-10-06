@@ -13,6 +13,7 @@ import { CreateMessageDto } from 'src/modules/message/dtos/create-message.dto';
 import { Server } from 'https';
 import { Logger } from '@nestjs/common';
 import { UserService } from '../../user/services/user.service';
+import { NotificationService } from 'src/modules/notification/services/notification.service';
 
 @WebSocketGateway({ cors: true })
 export class EventGateway {
@@ -25,6 +26,7 @@ export class EventGateway {
     private readonly messageService: MessageService,
     private readonly channelService: ChannelService,
     private readonly userService: UserService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   afterInit() {
@@ -67,6 +69,11 @@ export class EventGateway {
       const socket = this.clients.get(id);
       socket?.emit(SocketEvent.ChannelUpdated, { channelId: data.channel });
     });
+    this.notificationService.sendPush(
+      Array.from(users)
+        // .filter(({ id }) => id !== message.user._id.toString())
+        .map(({ id }) => id),
+    );
     return message;
   }
 

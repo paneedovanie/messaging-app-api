@@ -11,6 +11,7 @@ type Config = {
     url: string;
     name: string;
   };
+  expo: { accessToken: string };
 };
 
 export default (): Config => ({
@@ -25,5 +26,8 @@ export default (): Config => ({
   database: {
     url: process.env.DATABASE_URL || 'mongodb://localhost:27017',
     name: process.env.DATABASE_NAME || 'messaging-app',
+  },
+  expo: {
+    accessToken: process.env.EXPO_ACCESS_TOKEN,
   },
 });
