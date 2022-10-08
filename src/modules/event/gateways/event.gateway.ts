@@ -78,6 +78,11 @@ export class EventGateway {
         {
           title: filteredUsers[0].name,
           body: message.content,
+          data: {
+            screen: 'Channel',
+            channelId: data.channel.toString(),
+            title: filteredUsers[0].name,
+          },
         },
       );
     })();
