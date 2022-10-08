@@ -69,11 +69,18 @@ export class EventGateway {
       const socket = this.clients.get(id);
       socket?.emit(SocketEvent.ChannelUpdated, { channelId: data.channel });
     });
-    this.notificationService.sendPush(
-      Array.from(users)
-        // .filter(({ id }) => id !== message.user._id.toString())
-        .map(({ id }) => id),
-    );
+    (async () => {
+      const filteredUsers = Array.from(users).filter(
+        ({ id }) => id !== message.user._id.toString(),
+      );
+      this.notificationService.sendPush(
+        filteredUsers.map(({ id }) => id),
+        {
+          title: filteredUsers[0].name,
+          body: message.content,
+        },
+      );
+    })();
     return message;
   }
 

@@ -16,7 +16,14 @@ export class NotificationService {
     return tokenMapper.get(userId);
   }
 
-  async sendPush(userIds: string[]): Promise<any> {
+  async sendPush(
+    userIds: string[],
+    message: {
+      title: string;
+      body: string;
+      data?: any;
+    },
+  ): Promise<any> {
     const messages = [];
     for (const userId of userIds) {
       const pushToken = tokenMapper.get(userId);
@@ -33,9 +40,7 @@ export class NotificationService {
       messages.push({
         to: pushToken,
         sound: 'default',
-        title: "You've got mail! 📬",
-        body: 'Here is the notification body',
-        data: { data: 'goes here' },
+        ...message,
       });
     }
 
