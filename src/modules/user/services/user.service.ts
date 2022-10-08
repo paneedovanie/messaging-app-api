@@ -77,7 +77,8 @@ export class UserService {
     const user = await this.userRepository.findOne(userId, {
       populate: ['online'],
     });
-    if (!user.online) {
+    if (!user) return;
+    if (!user?.online) {
       user.online = this.onlineRepository.create({
         user,
         active: value,

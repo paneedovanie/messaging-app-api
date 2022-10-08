@@ -22,7 +22,7 @@ export class MessageRepository extends EntityRepository<Message> {
     return this.findOne({ id: message.id }, { populate: ['user', 'channel'] });
   }
 
-  findLastestMessages(id: ObjectId): Promise<Message[]> {
+  findLatestMessages(id: ObjectId, userId: ObjectId): Promise<Message[]> {
     return this.aggregate([
       {
         $lookup: {
@@ -39,7 +39,26 @@ export class MessageRepository extends EntityRepository<Message> {
           localField: 'channel',
           foreignField: '_id',
           as: 'channel',
-          pipeline: idPipeline,
+          pipeline: [
+            ...idPipeline,
+            {
+              $lookup: {
+                from: 'seen',
+                localField: '_id',
+                foreignField: 'channel',
+                as: 'userLastSeen',
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $eq: ['$user', { $toObjectId: userId }],
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
         },
       },
       {
@@ -63,15 +82,45 @@ export class MessageRepository extends EntityRepository<Message> {
           },
         },
       },
+      {
+        $addFields: {
+          lastSeen: {
+            $arrayElemAt: [{ $arrayElemAt: ['$channel.userLastSeen', 0] }, 0],
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          createdAt: 1,
+          channel: 1,
+          user: 1,
+          content: 1,
+          id: 1,
+          lastSeen: 1,
+          unread: {
+            $cond: [
+              {
+                $gt: ['$createdAt', '$lastSeen.updatedAt'],
+              },
+              1,
+              0,
+            ],
+          },
+        },
+      },
       { $sort: { createdAt: -1 } },
       {
         $group: {
           _id: '$channel',
+          totalUnread: { $sum: '$unread' },
           doc: { $first: '$$ROOT' },
         },
       },
       {
-        $replaceRoot: { newRoot: '$doc' },
+        $replaceRoot: {
+          newRoot: { $mergeObjects: ['$doc', { unread: '$totalUnread' }] },
+        },
       },
       {
         $addFields: {

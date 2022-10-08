@@ -10,6 +10,7 @@ import {
 import { ObjectId } from '@mikro-orm/mongodb';
 import { ChannelRepository } from '../modules/channel/repositories/channel.repository';
 import { Message } from './message.entity';
+import { Seen } from './seen.entity';
 import { User } from './user.entity';
 
 @Entity({ tableName: 'channel', customRepository: () => ChannelRepository })
@@ -34,4 +35,9 @@ export class Channel {
 
   @OneToMany(() => Message, (message) => message.channel)
   messages = new Collection<Message>(this);
+
+  @Property({
+    nullable: true,
+  })
+  usersLastSeen: Seen[];
 }

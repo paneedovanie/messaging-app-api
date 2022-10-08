@@ -50,13 +50,19 @@ export class EventGateway {
   }
 
   @SubscribeMessage(SocketEvent.GetLatestMessages)
-  async findLastestMessages(@MessageBody() id: ObjectId): Promise<Message[]> {
-    return this.messageService.findLastestMessages(id);
+  async findLatestMessages(@MessageBody() id: ObjectId): Promise<Message[]> {
+    return this.messageService.findLatestMessages(id, this.userId);
   }
 
   @SubscribeMessage(SocketEvent.GetChannelMessages)
-  getChannelMessages(@MessageBody() id: ObjectId): Promise<Channel> {
-    return this.channelService.findMessages(id);
+  async getChannelMessages(@MessageBody() id: ObjectId): Promise<Channel> {
+    const channel = await this.channelService.findMessages(id);
+    await this.messageService.messageSeen(
+      id,
+      channel.messages[channel.messages.length - 1]._id,
+      this.userId,
+    );
+    return channel;
   }
 
   @SubscribeMessage(SocketEvent.SubmitMessage)
@@ -64,6 +70,11 @@ export class EventGateway {
     const message = await this.messageService.create(data);
     const { users } = await this.channelService.findOneById(
       new ObjectId(data.channel.toString()),
+    );
+    await this.messageService.messageSeen(
+      message.channel._id,
+      message._id,
+      new ObjectId(data.user.toString()),
     );
     Array.from(users).forEach(({ id }) => {
       const socket = this.clients.get(id);

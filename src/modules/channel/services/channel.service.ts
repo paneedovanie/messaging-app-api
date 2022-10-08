@@ -2,9 +2,10 @@ import { EntityManager } from '@mikro-orm/core';
 import { ObjectId } from '@mikro-orm/mongodb';
 import { Injectable } from '@nestjs/common';
 import { MessageRepository } from '../../message/repositories/message.repository';
-import { Channel, Message } from '../../../entities';
+import { Channel } from '../../../entities';
 import { CreateChannelDto } from '../dtos/create-channel.dto';
 import { ChannelRepository } from '../repositories/channel.repository';
+import { SeenRepository } from 'src/modules/message/repositories';
 
 @Injectable()
 export class ChannelService {
@@ -12,6 +13,7 @@ export class ChannelService {
     private readonly channelRepository: ChannelRepository,
     private readonly messageRepository: MessageRepository,
     private readonly em: EntityManager,
+    private readonly seenRepository: SeenRepository,
   ) {}
 
   async create({ userIds }: CreateChannelDto): Promise<Channel> {
@@ -31,7 +33,7 @@ export class ChannelService {
     });
   }
 
-  findMessages(id: ObjectId): Promise<Channel> {
+  async findMessages(id: ObjectId): Promise<Channel> {
     return this.channelRepository.findOne(id, {
       populate: [
         'users',
