@@ -18,11 +18,8 @@ export class MessageService {
     return this.messageRepository.generate(data);
   }
 
-  async findLatestMessages(
-    channelId: ObjectId,
-    userId: ObjectId,
-  ): Promise<Message[]> {
-    return this.messageRepository.findLatestMessages(channelId, userId);
+  async findLatestMessages(userId: ObjectId): Promise<Message[]> {
+    return this.messageRepository.findLatestMessages(userId);
   }
 
   async messageSeen(

@@ -33,15 +33,7 @@ export class ChannelService {
     });
   }
 
-  async findMessages(id: ObjectId): Promise<Channel> {
-    return this.channelRepository.findOne(id, {
-      populate: [
-        'users',
-        'users.online',
-        'messages',
-        'messages.user',
-        'messages.user.online',
-      ],
-    });
+  findMessages(id: ObjectId): Promise<Channel> {
+    return this.channelRepository.getMessages(id);
   }
 }

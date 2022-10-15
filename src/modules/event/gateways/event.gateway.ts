@@ -14,13 +14,13 @@ import { Server } from 'https';
 import { Logger } from '@nestjs/common';
 import { UserService } from '../../user/services/user.service';
 import { NotificationService } from 'src/modules/notification/services/notification.service';
+import { Socket } from 'socket.io';
 
 @WebSocketGateway({ cors: true })
 export class EventGateway {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger(EventGateway.name);
   private clients = new Map();
-  private userId;
 
   constructor(
     private readonly messageService: MessageService,
@@ -33,34 +33,38 @@ export class EventGateway {
     this.logger.log('Websocket Server Started');
   }
 
-  handleDisconnect(client) {
+  handleDisconnect(client: Socket) {
     const { userId } = client.handshake.query;
     this.clients.delete(userId);
-    this.userService.setOnline(userId, false);
+    this.userService.setOnline(new ObjectId(userId.toString()), false);
     // console.log(`Client disconnected: ${userId}`);
   }
 
-  handleConnection(client) {
+  handleConnection(client: Socket) {
     const { userId } = client.handshake.query;
-    this.userId = userId;
     this.clients.set(userId, client);
-    this.userService.setOnline(userId, true);
+    this.userService.setOnline(new ObjectId(userId.toString()), true);
     // console.log(`Client connected: ${userId}`);
     // console.log(this.clients.size);
   }
 
   @SubscribeMessage(SocketEvent.GetLatestMessages)
-  async findLatestMessages(@MessageBody() id: ObjectId): Promise<Message[]> {
-    return this.messageService.findLatestMessages(id, this.userId);
+  async findLatestMessages(client: any): Promise<Message[]> {
+    const { userId } = client.handshake.query;
+    const result = await this.messageService.findLatestMessages(userId);
+    // console.log('userId', userId);
+    // console.log(result);
+    return result;
   }
 
   @SubscribeMessage(SocketEvent.GetChannelMessages)
-  async getChannelMessages(@MessageBody() id: ObjectId): Promise<Channel> {
+  async getChannelMessages(client: Socket, id: ObjectId): Promise<Channel> {
+    const { userId } = client.handshake.query;
     const channel = await this.channelService.findMessages(id);
     await this.messageService.messageSeen(
       id,
       channel.messages[channel.messages.length - 1]._id,
-      this.userId,
+      new ObjectId(userId.toString()),
     );
     return channel;
   }
@@ -80,9 +84,10 @@ export class EventGateway {
       const socket = this.clients.get(id);
       socket?.emit(SocketEvent.ChannelUpdated, { channelId: data.channel });
     });
+
     (async () => {
       const filteredUsers = Array.from(users).filter(
-        ({ id }) => id !== message.user._id.toString(),
+        ({ id }) => id !== message.user.toString(),
       );
       this.notificationService.sendPush(
         filteredUsers.map(({ id }) => id),
